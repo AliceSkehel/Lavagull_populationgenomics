@@ -1,0 +1,99 @@
+#!/bin/bash
+
+# Script to merge Lava Gull FASTQ files from different sequencing runs
+# Based on barcode correspondences: NB01↔NB01, NB03↔NB02, etc.
+
+# Define base directories
+TEST_DIR="/home/vdeferran/basecalled_fastq_files/NB_test_LavaGull/trimmed_porechop_abi"
+LIB1_DIR="/home/vdeferran/basecalled_fastq_files/new_run/NB_LVGU_lib1_nobarcode/pass"
+LIB2_DIR="/home/vdeferran/basecalled_fastq_files/new_run/NB_LVGU_lib2_nobarcode/pass"
+OUTPUT_DIR="/home/askehel/mitogenome/mito_fastq_merged"
+
+# Create output directory
+mkdir -p ${OUTPUT_DIR}
+
+echo "Starting FASTQ file merging..."
+
+# NB01 ↔ NB01 (test barcode01 ↔ lib1 barcode01)
+echo "Merging NB01..."
+cat ${TEST_DIR}/NB_LavaGull_barcode01_merged_porechop-abi.fastq.gz \
+    ${LIB1_DIR}/NB_LVGU_lib1_barcode01_trimmed_porechop-abi.fastq.gz \
+    > ${OUTPUT_DIR}/merged_NB01.fastq.gz
+
+# NB03 ↔ NB02 (test barcode03 ↔ lib1 barcode02)
+echo "Merging NB03-NB02..."
+cat ${TEST_DIR}/NB_LavaGull_barcode03_merged_porechop-abi.fastq.gz \
+    ${LIB1_DIR}/NB_LVGU_lib1_barcode02_trimmed_porechop-abi.fastq.gz \
+    > ${OUTPUT_DIR}/merged_NB03-NB02.fastq.gz
+
+# NB04 ↔ NB03 (test barcode04 ↔ lib1 barcode03)
+echo "Merging NB04-NB03..."
+cat ${TEST_DIR}/NB_LavaGull_barcode04_merged_porechop-abi.fastq.gz \
+    ${LIB1_DIR}/NB_LVGU_lib1_barcode03_trimmed_porechop-abi.fastq.gz \
+    > ${OUTPUT_DIR}/merged_NB04-NB03.fastq.gz
+
+# NB12 ↔ NB04 (test barcode12 ↔ lib1 barcode04)
+echo "Merging NB12-NB04..."
+cat ${TEST_DIR}/NB_LavaGull_barcode12_merged_porechop-abi.fastq.gz \
+    ${LIB1_DIR}/NB_LVGU_lib1_barcode04_trimmed_porechop-abi.fastq.gz \
+    > ${OUTPUT_DIR}/merged_NB12-NB04.fastq.gz
+
+# NB06 ↔ NB05 (test barcode06 ↔ lib1 barcode05)
+echo "Merging NB06-NB05..."
+cat ${TEST_DIR}/NB_LavaGull_barcode06_merged_porechop-abi.fastq.gz \
+    ${LIB1_DIR}/NB_LVGU_lib1_barcode05_trimmed_porechop-abi.fastq.gz \
+    > ${OUTPUT_DIR}/merged_NB06-NB05.fastq.gz
+
+# NB08 ↔ NB06 (test barcode08 ↔ lib1 barcode06)
+echo "Merging NB08-NB06..."
+cat ${TEST_DIR}/NB_LavaGull_barcode08_merged_porechop-abi.fastq.gz \
+    ${LIB1_DIR}/NB_LVGU_lib1_barcode06_trimmed_porechop-abi.fastq.gz \
+    > ${OUTPUT_DIR}/merged_NB08-NB06.fastq.gz
+
+# NB09 ↔ NB11 (test barcode09 ↔ lib2 barcode11)
+echo "Merging NB09-NB11..."
+cat ${TEST_DIR}/NB_LavaGull_barcode09_merged_porechop-abi.fastq.gz \
+    ${LIB2_DIR}/NB_LVGU_lib2_barcode11_trimmed_porechop-abi.fastq.gz \
+    > ${OUTPUT_DIR}/merged_NB09-NB11.fastq.gz
+
+# NB10 ↔ NB12 (test barcode10 ↔ lib2 barcode12)
+echo "Merging NB10-NB12..."
+cat ${TEST_DIR}/NB_LavaGull_barcode10_merged_porechop-abi.fastq.gz \
+    ${LIB2_DIR}/NB_LVGU_lib2_barcode12_trimmed_porechop-abi.fastq.gz \
+    > ${OUTPUT_DIR}/merged_NB10-NB12.fastq.gz
+
+# NB13 ↔ NB13 (test barcode13 ↔ lib2 barcode13)
+echo "Merging NB13..."
+cat ${TEST_DIR}/NB_LavaGull_barcode13_merged_porechop-abi.fastq.gz \
+    ${LIB2_DIR}/NB_LVGU_lib2_barcode13_trimmed_porechop-abi.fastq.gz \
+    > ${OUTPUT_DIR}/merged_NB13.fastq.gz
+
+# NB14 ↔ NB14 (test barcode14 ↔ lib2 barcode14)
+echo "Merging NB14..."
+cat ${TEST_DIR}/NB_LavaGull_barcode14_merged_porechop-abi.fastq.gz \
+    ${LIB2_DIR}/NB_LVGU_lib2_barcode14_trimmed_porechop-abi.fastq.gz \
+    > ${OUTPUT_DIR}/merged_NB14.fastq.gz
+
+# NB15 ↔ NB15 (test barcode15 ↔ lib2 barcode15)
+echo "Merging NB15..."
+cat ${TEST_DIR}/NB_LavaGull_barcode15_merged_porechop-abi.fastq.gz \
+    ${LIB2_DIR}/NB_LVGU_lib2_barcode15_trimmed_porechop-abi.fastq.gz \
+    > ${OUTPUT_DIR}/merged_NB15.fastq.gz
+
+# NB16 ↔ NB16 (test barcode16 ↔ lib2 barcode16)
+echo "Merging NB16..."
+cat ${TEST_DIR}/NB_LavaGull_barcode16_merged_porechop-abi.fastq.gz \
+    ${LIB2_DIR}/NB_LVGU_lib2_barcode16_trimmed_porechop-abi.fastq.gz \
+    > ${OUTPUT_DIR}/merged_NB16.fastq.gz
+
+echo "Merging complete! Merged files are in: ${OUTPUT_DIR}"
+
+# Copy single-run files (test barcodes without corresponding lib files)
+echo "Copying single-run files..."
+cp ${TEST_DIR}/NB_LavaGull_barcode02_merged_porechop-abi.fastq.gz ${OUTPUT_DIR}/single_NB02.fastq.gz
+cp ${TEST_DIR}/NB_LavaGull_barcode05_merged_porechop-abi.fastq.gz ${OUTPUT_DIR}/single_NB05.fastq.gz
+cp ${TEST_DIR}/NB_LavaGull_barcode07_merged_porechop-abi.fastq.gz ${OUTPUT_DIR}/single_NB07.fastq.gz
+cp ${TEST_DIR}/NB_LavaGull_barcode11_merged_porechop-abi.fastq.gz ${OUTPUT_DIR}/single_NB11.fastq.gz
+cp ${TEST_DIR}/NB_LavaGull_barcode17_merged_porechop-abi.fastq.gz ${OUTPUT_DIR}/single_NB17.fastq.gz
+
+echo "All files processed successfully!"

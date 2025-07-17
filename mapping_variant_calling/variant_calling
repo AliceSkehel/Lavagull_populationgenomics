@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# Variant calling script for lava gull bioinformatics pipeline
+# Usage: ./variant_call.sh reference.fa
+# Uses 8 threads for faster processing
+#!/bin/bash
+# Variant calling script
+# Created: May 14, 2025
+
+# Check for command-line arguments
+if [ $# -eq 0 ]; then
+    # No arguments provided, use default reference
+    REFERENCE="/home/askehel/Doves_run/genome_data/GCA_964417175.1_bLarArg3.hap1.1_genomic.fna"
+    echo "Using default reference: $REFERENCE"
+elif [ $# -eq 1 ]; then
+    # Use provided reference file
+    REFERENCE="$1"
+    
+    # Check if file exists
+    if [ ! -f "$REFERENCE" ]; then
+        echo "ERROR: Reference file not found: $REFERENCE"
+        echo "Usage: $0 [reference.fa]"
+        exit 1
+    fi
+else
+    # Too many arguments
+    echo "Usage: $0 [reference.fa]"
+    echo "If no reference is provided, the default will be used."
+    exit 1
+fi
+
+# Set other variables
+INPUT_DIR="/home/askehel/Doves_run/herring_gull_analyses"
+OUTPUT_DIR="/home/askehel/Doves_run/herring_gull_variants"
+LOGFILE="${OUTPUT_DIR}/variant_calling_progress.log"
+
+# Auto-detect number of available cores (subtract 2 to leave some resources for the system)
+THREADS=$(nproc --all)
+if [ $THREADS -gt 2 ]; then
+    THREADS=$((THREADS - 2))
+fi
+
+# Create output directory
+mkdir -p $OUTPUT_DIR
+
+# Start logging
+echo "=== Variant Calling Started at $(date) ===" | tee -a $LOGFILE
+echo "Using reference: $REFERENCE" | tee -a $LOGFILE
+echo "Using $THREADS threads based on available CPU cores" | tee -a $LOGFILE
+
+# Function to process a sample
+process_sample() {
+    SAMPLE=$1
+    
+    echo "Processing sample: $SAMPLE ($(date))" | tee -a $LOGFILE
+    
+    # Input and output files
+    BAM_FILE="${INPUT_DIR}/${SAMPLE}.dedup.bam"
+    BCF_FILE="${OUTPUT_DIR}/${SAMPLE}.raw_variants.bcf"
+    
+    # Check if input file exists
+    if [ ! -f "$BAM_FILE" ]; then
+        echo "ERROR: Input BAM file not found: $BAM_FILE" | tee -a $LOGFILE
+        return 1
+    fi
+    
+    # Run variant calling
+    echo "Calling variants for $SAMPLE using $THREADS threads ($(date))..." | tee -a $LOGFILE
+    bcftools mpileup -f $REFERENCE -Ou --threads $THREADS $BAM_FILE | \
+        bcftools call -mv -Ob --threads $THREADS -o $BCF_FILE
+    
+    # Index the BCF file
+    echo "Indexing BCF file for $SAMPLE ($(date))..." | tee -a $LOGFILE
+    bcftools index $BCF_FILE
+    
+    echo "✓ Completed variant calling for $SAMPLE ($(date))" | tee -a $LOGFILE
+    echo "-------------------------------------------" | tee -a $LOGFILE
+}
+
+# Process each sample
+SAMPLES=("LaGu_Workshop05" "LaGu_Workshop06" "LaGu_Workshop08" "LaGu_Workshop09A" "LaGu_Workshop09B")
+TOTAL=${#SAMPLES[@]}
+CURRENT=0
+
+for SAMPLE in "${SAMPLES[@]}"; do
+    CURRENT=$((CURRENT+1))
+    echo "[$CURRENT/$TOTAL] Processing $SAMPLE" | tee -a $LOGFILE
+    process_sample $SAMPLE
+done
+
+# Merge all BCF files
+echo "Merging variant calls from all samples using $THREADS threads ($(date))..." | tee -a $LOGFILE
+bcftools merge --threads $THREADS -Ob -o "${OUTPUT_DIR}/merged_variants.bcf" ${OUTPUT_DIR}/*.raw_variants.bcf
+
+# Index the merged file
+echo "Indexing merged BCF ($(date))..." | tee -a $LOGFILE
+bcftools index "${OUTPUT_DIR}/merged_variants.bcf"
+
+# Convert to VCF for downstream analysis
+echo "Converting to VCF format using $THREADS threads ($(date))..." | tee -a $LOGFILE
+bcftools view --threads $THREADS "${OUTPUT_DIR}/merged_variants.bcf" -Ov -o "${OUTPUT_DIR}/merged_variants.vcf"
+
+# Create completion flag
+touch "${OUTPUT_DIR}/COMPLETED_$(date +%Y%m%d_%H%M%S)"
+
+echo "✓ Variant calling pipeline complete! ($(date))" | tee -a $LOGFILE

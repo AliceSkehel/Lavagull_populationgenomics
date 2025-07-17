@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+
+import numpy as np
+import gzip
+import sys
+
+def calculate_kinship_from_beagle(beagle_file, output_file):
+    """
+    Calculate kinship coefficients from ANGSD beagle file
+    """
+    print(f"Reading beagle file: {beagle_file}")
+    
+    # Read the beagle file
+    with gzip.open(beagle_file, 'rt') as f:
+        header = f.readline().strip().split('\t')
+        
+        # Extract sample names (every 3rd column starting from index 3)
+        samples = []
+        for i in range(3, len(header), 3):
+            sample_name = header[i].replace('_0', '')
+            samples.append(sample_name)
+        
+        n_samples = len(samples)
+        print(f"Found {n_samples} samples")
+        
+        # Store genotype probabilities
+        sites = []
+        
+        for line_num, line in enumerate(f):
+            if line_num % 10000 == 0:
+                print(f"Processing site {line_num}")
+            
+            parts = line.strip().split('\t')
+            
+            # Extract genotype probabilities for all samples
+            site_probs = []
+            for i in range(3, len(parts), 3):
+                # Get probabilities for this sample (0/0, 0/1, 1/1)
+                p00 = float(parts[i])
+                p01 = float(parts[i+1]) 
+                p11 = float(parts[i+2])
+                site_probs.append([p00, p01, p11])
+            
+            sites.append(site_probs)
+            
+            # Limit to first 50k sites for speed (remove this for full analysis)
+            if line_num > 50000:
+                break
+    
+    print(f"Processed {len(sites)} sites")
+    
+    # Convert to numpy array
+    sites = np.array(sites)  # Shape: (n_sites, n_samples, 3)
+    
+    # Calculate kinship matrix
+    kinship_matrix = np.zeros((n_samples, n_samples))
+    
+    print("Calculating kinship coefficients...")
+    
+    for i in range(n_samples):
+        for j in range(i, n_samples):
+            if i == j:
+                # Self kinship (inbreeding coefficient + 0.5)
+                kinship = 0.5
+            else:
+                # Calculate kinship between individuals i and j
+                kinship = calculate_pairwise_kinship(sites[:, i, :], sites[:, j, :])
+            
+            kinship_matrix[i, j] = kinship
+            kinship_matrix[j, i] = kinship
+    
+    # Save results
+    print(f"Saving results to {output_file}")
+    
+    # Save kinship matrix
+    np.savetxt(f"{output_file}.kinship", kinship_matrix, fmt='%.6f')
+    
+    # Save sample names
+    with open(f"{output_file}.samples", 'w') as f:
+        for sample in samples:
+            f.write(f"{sample}\n")
+    
+    # Create summary report
+    with open(f"{output_file}.summary", 'w') as f:
+        f.write("KINSHIP ANALYSIS SUMMARY\n")
+        f.write("=" * 50 + "\n")
+        f.write(f"Number of samples: {n_samples}\n")
+        f.write(f"Number of sites analyzed: {len(sites)}\n\n")
+        
+        f.write("RELATED PAIRS (kinship > 0.125):\n")
+        f.write("-" * 40 + "\n")
+        
+        related_pairs = []
+        for i in range(n_samples):
+            for j in range(i+1, n_samples):
+                if kinship_matrix[i, j] > 0.125:
+                    related_pairs.append((i, j, kinship_matrix[i, j]))
+                    f.write(f"{samples[i]} - {samples[j]}: {kinship_matrix[i, j]:.4f}\n")
+        
+        if not related_pairs:
+            f.write("No related pairs found (kinship > 0.125)\n")
+        
+        f.write(f"\nTotal related pairs: {len(related_pairs)}\n")
+        
+        # Kinship interpretation
+        f.write("\nKINSHIP INTERPRETATION:\n")
+        f.write("0.5 = Parent-offspring or full siblings\n")
+        f.write("0.25 = Half-siblings\n") 
+        f.write("0.125 = First cousins\n")
+        f.write("0.0625 = Second cousins\n")
+    
+    print("Analysis complete!")
+    print(f"Results saved to:")
+    print(f"  - {output_file}.kinship (kinship matrix)")
+    print(f"  - {output_file}.samples (sample names)")
+    print(f"  - {output_file}.summary (summary report)")
+
+def calculate_pairwise_kinship(probs1, probs2):
+    """
+    Calculate kinship coefficient between two individuals
+    using genotype probabilities
+    """
+    n_sites = len(probs1)
+    kinship_sum = 0
+    
+    for site in range(n_sites):
+        p1 = probs1[site]  # [p00, p01, p11] for individual 1
+        p2 = probs2[site]  # [p00, p01, p11] for individual 2
+        
+        # Expected allele frequencies
+        af1 = p1[1] * 0.5 + p1[2]  # 0.5 * p01 + 1.0 * p11
+        af2 = p2[1] * 0.5 + p2[2]
+        
+        # Population allele frequency (mean)
+        pop_af = (af1 + af2) / 2
+        
+        if pop_af > 0 and pop_af < 1:
+            # Kinship coefficient calculation
+            kinship_site = ((af1 - pop_af) * (af2 - pop_af)) / (pop_af * (1 - pop_af))
+            kinship_sum += kinship_site
+    
+    return kinship_sum / n_sites
+
+if __name__ == "__main__":
+    beagle_file = "/home/askehel/Sequencing_Combined/angsd_variant_calling/lava_gulls_illumina_only.beagle.gz"
+    output_file = "lava_gulls_relatedness"
+    
+    calculate_kinship_from_beagle(beagle_file, output_file)

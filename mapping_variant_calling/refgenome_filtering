@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Simple FASTQ filtering script
+# Based on your data: Q10 >99.6%, mean quality 16.9, mean lengths 1.7-7.2kb
+
+INPUT_DIR="mitogenome/mito_fastq_merged"
+OUTPUT_DIR="mitogenome/mito_filtered"
+
+# Filter parameters
+MIN_LENGTH=800
+MAX_LENGTH=25000
+MIN_QUALITY=10
+
+# Create output directory
+mkdir -p ${OUTPUT_DIR}
+
+echo "Filtering FASTQ files..."
+echo "Parameters: Q${MIN_QUALITY}+, ${MIN_LENGTH}-${MAX_LENGTH} bp"
+
+# Process all files
+for file in ${INPUT_DIR}/*.fastq.gz; do
+    basename=$(basename ${file} .fastq.gz)
+    echo "Processing: ${basename}"
+    
+    zcat ${file} | \
+    NanoFilt -q ${MIN_QUALITY} -l ${MIN_LENGTH} --maxlength ${MAX_LENGTH} | \
+    gzip > ${OUTPUT_DIR}/${basename}_filtered.fastq.gz
+    
+    echo "✓ Done: ${basename}_filtered.fastq.gz"
+done
+
+echo "All files filtered and saved to: ${OUTPUT_DIR}/"
+
