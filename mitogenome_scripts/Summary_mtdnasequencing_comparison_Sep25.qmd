@@ -1,0 +1,333 @@
+---
+title: "Comparing MtDNA Sequencing Techniques"
+author: "Alice Skehel"
+format: html
+editor: visual
+---
+
+## Set up and data loading
+
+```{r}
+
+#| cap: "Individuals sequenced both by ONT and Illumina"
+
+library(seqinr)
+library(knitr)
+library(dplyr)
+
+# Set working directory
+setwd("/home/askehel/Sequencing_Combined/mtdna_only/mtdna_reextraction/")
+
+# Load sequences
+illumina_seqs <- read.fasta("illumina_all_angsd.fasta", as.string = TRUE)
+ont_seqs <- read.fasta("ont_all_angsd.fasta", as.string = TRUE)
+
+# Load the yellow-legged gull reference genome
+ref_genome <- read.fasta("mtdna_reference_only.fna", as.string = TRUE)
+yllg_reference_seq <- ref_genome[[1]]
+
+# Clean up sample names
+names(illumina_seqs) <- gsub("LVGU_", "", names(illumina_seqs))
+names(ont_seqs) <- gsub("LVGU_", "", names(ont_seqs))
+names(illumina_seqs) <- as.character(as.numeric(names(illumina_seqs)))
+names(ont_seqs) <- as.character(as.numeric(names(ont_seqs)))
+
+# Get individual 60 as reference
+individual_60_ref <- NULL
+if("60" %in% names(illumina_seqs)) {
+  individual_60_ref <- illumina_seqs[["60"]]
+} else if("60" %in% names(ont_seqs)) {
+  individual_60_ref <- ont_seqs[["60"]]
+} else {
+  cat("Individual 60 not found - will only use yellow-legged gull reference\n")
+}
+
+# Find common individuals
+common_individuals <- intersect(names(illumina_seqs), names(ont_seqs))
+common_individuals <- common_individuals[common_individuals != "60"]  # Remove reference individual
+cat("Found", length(common_individuals), "individuals for comparison:\n")
+cat(paste(common_individuals, collapse = ", "), "\n")
+
+```
+
+```{r}
+
+#| label: analysis-functions
+
+# Function to compare two sequences directly
+compare_sequences <- function(seq1, seq2) {
+  chars1 <- strsplit(seq1, "")[[1]]
+  chars2 <- strsplit(seq2, "")[[1]]
+  
+  min_length <- min(length(chars1), length(chars2))
+  chars1 <- chars1[1:min_length]
+  chars2 <- chars2[1:min_length]
+  
+  valid_positions <- (chars1 != "N" & chars1 != "n") & (chars2 != "N" & chars2 != "n")
+  
+  if(sum(valid_positions) == 0) {
+    return(list(differences = NA, total_compared = 0, percent_diff = NA))
+  }
+  
+  differences <- sum(chars1[valid_positions] != chars2[valid_positions])
+  total_compared <- sum(valid_positions)
+  percent_diff <- (differences / total_compared) * 100
+  
+  return(list(differences = differences, total_compared = total_compared, percent_diff = percent_diff))
+}
+
+# Function to compare sequence against reference
+compare_to_reference <- function(seq, ref_seq) {
+  chars <- strsplit(seq, "")[[1]]
+  ref_chars <- strsplit(ref_seq, "")[[1]]
+  
+  min_length <- min(length(chars), length(ref_chars))
+  chars <- chars[1:min_length]
+  ref_chars <- ref_chars[1:min_length]
+  
+  valid_positions <- (chars != "N" & chars != "n") & (ref_chars != "N" & ref_chars != "n")
+  
+  if(sum(valid_positions) == 0) {
+    return(list(differences = NA, total_compared = 0, percent_diff = NA))
+  }
+  
+  differences <- sum(chars[valid_positions] != ref_chars[valid_positions])
+  total_compared <- sum(valid_positions)
+  percent_diff <- (differences / total_compared) * 100
+  
+  return(list(differences = differences, total_compared = total_compared, percent_diff = percent_diff))
+}
+```
+
+
+## Pairwise coverage and SNP differences between Illumina and ONT mtDNA
+
+```{r}
+
+#| label: tbl-direct-comparison
+#| tbl-cap: "Direct comparison between ONT and Illumina sequencing technologies - this script compares the presence or absence of SNPs for the same individuals across different sequencing techniques, shows the number of sites compared and reports the % coverage for each sequencing technique. Those individuals with sequencing coverage of <80% coverage seem to have more differences, however individual 18 and 30 have high numbers of SNP differences despite high coverage for both sequencing techniques. Regions that have N's on either individual are excluded from the analysis, hence the inclusion of a column showing the number of sites compared. To better understand the inconsistencies I will further investigate both sequencing types by comparing to reference genomes."
+
+# Initialize results dataframe
+ont_vs_illumina_results <- data.frame(
+  Individual = character(0),
+  SNP_Differences = numeric(0),
+  Sites_Compared = numeric(0),
+  Percent_Different = numeric(0),
+  Illumina_Coverage = numeric(0),
+  ONT_Coverage = numeric(0),
+  stringsAsFactors = FALSE
+)
+
+# Compare each individual
+for(individual in common_individuals) {
+  if(individual %in% names(illumina_seqs) && individual %in% names(ont_seqs)) {
+    illumina_seq <- illumina_seqs[[individual]]
+    ont_seq <- ont_seqs[[individual]]
+    
+    # Calculate coverage
+    illumina_chars <- strsplit(illumina_seq, "")[[1]]
+    ont_chars <- strsplit(ont_seq, "")[[1]]
+    illumina_coverage <- sum(illumina_chars != "N" & illumina_chars != "n") / length(illumina_chars)
+    ont_coverage <- sum(ont_chars != "N" & ont_chars != "n") / length(ont_chars)
+    
+    # Skip if coverage too low
+    if(illumina_coverage < 0.5 | ont_coverage < 0.5) {
+      cat("Skipping individual", individual, "- Low coverage\n")
+      next
+    }
+    
+    # Compare sequences
+    comparison <- compare_sequences(illumina_seq, ont_seq)
+    
+    ont_vs_illumina_results <- rbind(ont_vs_illumina_results, data.frame(
+      Individual = individual,
+      SNP_Differences = comparison$differences,
+      Sites_Compared = comparison$total_compared,
+      Percent_Different = round(comparison$percent_diff, 3),
+      Illumina_Coverage = round(illumina_coverage * 100, 1),
+      ONT_Coverage = round(ont_coverage * 100, 1),
+      stringsAsFactors = FALSE
+    ))
+  }
+}
+
+# Sort by SNP differences
+ont_vs_illumina_results <- ont_vs_illumina_results[order(ont_vs_illumina_results$SNP_Differences), ]
+
+# Display table
+kable(ont_vs_illumina_results, 
+      row.names = FALSE,
+      col.names = c("Individual", "SNP Differences", "Sites Compared", "% Different", "Illumina Coverage (%)", "ONT Coverage (%)"),
+      digits = 3,
+      align = c("c", "c", "c", "c", "c", "c"))
+
+
+```
+
+## Three-way comparison of results
+
+```{r}
+#| label: tbl-dual-reference-comparison
+#| tbl-cap: "Dual reference comparison: Both technologies against YLLG reference and Individual 60 reference"
+
+# Initialize dual reference comparison results dataframe
+dual_ref_results <- data.frame(
+  Individual = character(0),
+  Illumina_vs_YLLG_Diffs = numeric(0),
+  Illumina_vs_YLLG_Sites = numeric(0),
+  Illumina_vs_YLLG_Percent = numeric(0),
+  ONT_vs_YLLG_Diffs = numeric(0),
+  ONT_vs_YLLG_Sites = numeric(0),
+  ONT_vs_YLLG_Percent = numeric(0),
+  Illumina_vs_Ind60_Diffs = numeric(0),
+  Illumina_vs_Ind60_Sites = numeric(0),
+  Illumina_vs_Ind60_Percent = numeric(0),
+  ONT_vs_Ind60_Diffs = numeric(0),
+  ONT_vs_Ind60_Sites = numeric(0),
+  ONT_vs_Ind60_Percent = numeric(0),
+  Illumina_Coverage = numeric(0),
+  ONT_Coverage = numeric(0),
+  stringsAsFactors = FALSE
+)
+
+# Perform dual reference comparison for each individual
+for(individual in common_individuals) {
+  if(individual %in% names(illumina_seqs) && individual %in% names(ont_seqs)) {
+    illumina_seq <- illumina_seqs[[individual]]
+    ont_seq <- ont_seqs[[individual]]
+    
+    # Calculate coverage
+    illumina_chars <- strsplit(illumina_seq, "")[[1]]
+    ont_chars <- strsplit(ont_seq, "")[[1]]
+    illumina_coverage <- sum(illumina_chars != "N" & illumina_chars != "n") / length(illumina_chars)
+    ont_coverage <- sum(ont_chars != "N" & ont_chars != "n") / length(ont_chars)
+    
+    # Skip if coverage too low
+    if(illumina_coverage < 0.5 | ont_coverage < 0.5) {
+      cat("Skipping individual", individual, "- Low coverage\n")
+      next
+    }
+    
+    # Compare against YLLG Reference
+    illumina_vs_yllg <- compare_to_reference(illumina_seq, yllg_reference_seq)
+    ont_vs_yllg <- compare_to_reference(ont_seq, yllg_reference_seq)
+    
+    # Compare against Individual 60 Reference (if available)
+    illumina_vs_ind60 <- NULL
+    ont_vs_ind60 <- NULL
+    if(!is.null(individual_60_ref)) {
+      illumina_vs_ind60 <- compare_to_reference(illumina_seq, individual_60_ref)
+      ont_vs_ind60 <- compare_to_reference(ont_seq, individual_60_ref)
+    }
+    
+    # Add to results
+    dual_ref_results <- rbind(dual_ref_results, data.frame(
+      Individual = individual,
+      Illumina_vs_YLLG_Diffs = illumina_vs_yllg$differences,
+      Illumina_vs_YLLG_Sites = illumina_vs_yllg$total_compared,
+      Illumina_vs_YLLG_Percent = round(illumina_vs_yllg$percent_diff, 3),
+      ONT_vs_YLLG_Diffs = ont_vs_yllg$differences,
+      ONT_vs_YLLG_Sites = ont_vs_yllg$total_compared,
+      ONT_vs_YLLG_Percent = round(ont_vs_yllg$percent_diff, 3),
+      Illumina_vs_Ind60_Diffs = if(!is.null(illumina_vs_ind60)) illumina_vs_ind60$differences else NA,
+      Illumina_vs_Ind60_Sites = if(!is.null(illumina_vs_ind60)) illumina_vs_ind60$total_compared else NA,
+      Illumina_vs_Ind60_Percent = if(!is.null(illumina_vs_ind60)) round(illumina_vs_ind60$percent_diff, 3) else NA,
+      ONT_vs_Ind60_Diffs = if(!is.null(ont_vs_ind60)) ont_vs_ind60$differences else NA,
+      ONT_vs_Ind60_Sites = if(!is.null(ont_vs_ind60)) ont_vs_ind60$total_compared else NA,
+      ONT_vs_Ind60_Percent = if(!is.null(ont_vs_ind60)) round(ont_vs_ind60$percent_diff, 3) else NA,
+      Illumina_Coverage = round(illumina_coverage * 100, 1),
+      ONT_Coverage = round(ont_coverage * 100, 1),
+      stringsAsFactors = FALSE
+    ))
+  }
+}
+
+# Sort by Illumina vs YLLG differences
+dual_ref_results <- dual_ref_results[order(dual_ref_results$Illumina_vs_YLLG_Diffs), ]
+
+# Display dual reference comparison table
+kable(dual_ref_results,
+      row.names = FALSE,
+      col.names = c("Individual", 
+                    "Ill vs YLLG Diffs", "Ill vs YLLG Sites", "Ill vs YLLG %", 
+                    "ONT vs YLLG Diffs", "ONT vs YLLG Sites", "ONT vs YLLG %",
+                    "Ill vs LVGU Diffs", "Ill vs LVGU Sites", "Ill vs LVGU %",
+                    "ONT vs LVGU Diffs", "ONT vs LVGU Sites", "ONT vs LVGU %",
+                    "Ill Cov %", "ONT Cov %"),
+      digits = 3,
+      align = rep("c", 15))
+```
+
+```
+
+
+## Summary statistics
+
+```{r}
+#| label: tbl-dual-reference-summary
+#| tbl-cap: "Summary statistics for dual reference genome comparisons - for these summary statistics you can see that Illumina has been shown to have performed better than ONT having more accuracy calculated as less SNP differences to the reference genomes."
+
+# Calculate summary statistics for both references
+if(nrow(dual_ref_results) > 0) {
+  # YLLG Reference comparisons
+  mean_ill_yllg_diffs <- round(mean(dual_ref_results$Illumina_vs_YLLG_Diffs, na.rm = TRUE), 2)
+  mean_ont_yllg_diffs <- round(mean(dual_ref_results$ONT_vs_YLLG_Diffs, na.rm = TRUE), 2)
+  mean_ill_yllg_percent <- round(mean(dual_ref_results$Illumina_vs_YLLG_Percent, na.rm = TRUE), 3)
+  mean_ont_yllg_percent <- round(mean(dual_ref_results$ONT_vs_YLLG_Percent, na.rm = TRUE), 3)
+  
+  # Individual 60 Reference comparisons
+  mean_ill_ind60_diffs <- round(mean(dual_ref_results$Illumina_vs_Ind60_Diffs, na.rm = TRUE), 2)
+  mean_ont_ind60_diffs <- round(mean(dual_ref_results$ONT_vs_Ind60_Diffs, na.rm = TRUE), 2)
+  mean_ill_ind60_percent <- round(mean(dual_ref_results$Illumina_vs_Ind60_Percent, na.rm = TRUE), 3)
+  mean_ont_ind60_percent <- round(mean(dual_ref_results$ONT_vs_Ind60_Percent, na.rm = TRUE), 3)
+  
+  # Accuracy comparisons for both references
+  illumina_better_yllg <- sum(dual_ref_results$Illumina_vs_YLLG_Diffs < dual_ref_results$ONT_vs_YLLG_Diffs, na.rm = TRUE)
+  ont_better_yllg <- sum(dual_ref_results$ONT_vs_YLLG_Diffs < dual_ref_results$Illumina_vs_YLLG_Diffs, na.rm = TRUE)
+  
+  illumina_better_ind60 <- sum(dual_ref_results$Illumina_vs_Ind60_Diffs < dual_ref_results$ONT_vs_Ind60_Diffs, na.rm = TRUE)
+  ont_better_ind60 <- sum(dual_ref_results$ONT_vs_Ind60_Diffs < dual_ref_results$Illumina_vs_Ind60_Diffs, na.rm = TRUE)
+  
+  total_comparisons <- nrow(dual_ref_results)
+  
+  # Create dual reference summary table
+  summary_stats <- data.frame(
+    Metric = c(
+      "Mean Illumina vs YLLG Reference Differences (SNPs)",
+      "Mean ONT vs YLLG Reference Differences (SNPs)", 
+      "Mean Illumina vs YLLG Reference Error Rate (%)",
+      "Mean ONT vs YLLG Reference Error Rate (%)",
+      "Mean Illumina vs Individual 60 Differences (SNPs)",
+      "Mean ONT vs Individual 60 Differences (SNPs)", 
+      "Mean Illumina vs Individual 60 Error Rate (%)",
+      "Mean ONT vs Individual 60 Error Rate (%)",
+      "Individuals where Illumina more accurate (vs YLLG)",
+      "Individuals where ONT more accurate (vs YLLG)",
+      "Individuals where Illumina more accurate (vs Ind60)",
+      "Individuals where ONT more accurate (vs Ind60)"
+    ),
+    Value = c(
+      as.character(mean_ill_yllg_diffs),
+      as.character(mean_ont_yllg_diffs),
+      as.character(mean_ill_yllg_percent),
+      as.character(mean_ont_yllg_percent),
+      as.character(mean_ill_ind60_diffs),
+      as.character(mean_ont_ind60_diffs),
+      as.character(mean_ill_ind60_percent),
+      as.character(mean_ont_ind60_percent),
+      paste0(illumina_better_yllg, "/", total_comparisons, " (", round(100*illumina_better_yllg/total_comparisons, 1), "%)"),
+      paste0(ont_better_yllg, "/", total_comparisons, " (", round(100*ont_better_yllg/total_comparisons, 1), "%)"),
+      paste0(illumina_better_ind60, "/", total_comparisons, " (", round(100*illumina_better_ind60/total_comparisons, 1), "%)"),
+      paste0(ont_better_ind60, "/", total_comparisons, " (", round(100*ont_better_ind60/total_comparisons, 1), "%)")
+    )
+  )
+  
+  kable(summary_stats,
+        row.names = FALSE,
+        col.names = c("Metric", "Value"),
+        align = c("l", "c"))
+}
+
+```
+
+

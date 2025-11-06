@@ -38,7 +38,6 @@ results <- data.frame(
 )
 
 # Save and print
-write.csv(results, "analysis_outputs/temporal_haplotypes_clustered.csv", row.names = FALSE)
 cat("Found", length(unique(clusters)), "haplotypes using similarity clustering\n")
 print(sort(table(results$Haplotype), decreasing = TRUE))
 
@@ -55,3 +54,4 @@ for(period in c("Ancient", "Modern")) {
 # Plot dendrogram
 plot(hclust(as.dist(distances)), main = "Temporal Clustering of Sequences")
 abline(h = 0.001, col = "red")
+

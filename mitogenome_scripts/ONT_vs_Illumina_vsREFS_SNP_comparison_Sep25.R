@@ -251,7 +251,4 @@ if(nrow(yllg_ref_results) > 0) {
   cat("Individuals where ONT more accurate:", ont_better, "\n")
 }
 
-}
-
-cat("\nAll results saved to analysis_outputs/\n")
 

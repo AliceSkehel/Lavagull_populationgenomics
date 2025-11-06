@@ -4,43 +4,42 @@
 # using aligned_v4.fasta
 
 library(ape)
+library(pegas)
 
-# Read your aligned sequences
-sequences <- read.dna("/home/askehel/Sequencing_Combined/mtdna_only/consensus/aligned_v4.fasta", format = "fasta")
+# Read sequences
+sequences <- read.dna("/home/askehel/Sequencing_Combined/mtdna_only/consensus/aligned_v4.fasta", 
+                      format = "fasta")
 
-# Method 1: Check using distance matrix
-dist_matrix <- dist.dna(sequences, model = "raw")
-dist_matrix_full <- as.matrix(dist_matrix)
+cat("Samples:", nrow(sequences), "\n")
+cat("Length:", ncol(sequences), "bp\n\n")
 
-# Find identical sequences (distance = 0)
-identical_pairs <- which(dist_matrix_full == 0 & upper.tri(dist_matrix_full), arr.ind = TRUE)
+# Create haplotypes - treat N's and gaps as missing data
+h <- haplotype(sequences, strict = FALSE)
 
-cat("Checking for identical sequences:\n")
-if(nrow(identical_pairs) > 0) {
-  for(i in 1:nrow(identical_pairs)) {
-    cat("Identical:", rownames(dist_matrix_full)[identical_pairs[i,1]], 
-        "and", colnames(dist_matrix_full)[identical_pairs[i,2]], "\n")
-  }
-} else {
-  cat("No identical sequences found\n")
+cat("Number of unique haplotypes:", length(h), "\n\n")
+
+# Get haplotype assignments
+hap_labels <- attr(h, "index")
+names(hap_labels) <- rownames(sequences)
+
+# Show assignments
+cat("Haplotype assignments:\n")
+for(i in 1:length(unique(hap_labels))) {
+  samples_in_hap <- names(hap_labels)[hap_labels == i]
+  cat("Haplotype", i, ":", paste(samples_in_hap, collapse=", "), "\n")
 }
 
-# Method 2: Convert to strings and compare
-seq_strings <- apply(as.character(sequences), 1, paste, collapse = "")
-unique_seqs <- unique(seq_strings)
+# Create network
+net <- haploNet(h)
 
-cat("\nTotal samples:", length(seq_strings), "\n")
-cat("Unique haplotypes:", length(unique_seqs), "\n")
+# Plot
+pdf("haplotype_network.pdf", width = 10, height = 10)
+plot(net, 
+     size = attr(net, "freq"), 
+     scale.ratio = 2,
+     labels = TRUE,
+     show.mutation = 2)
+title(main = "mtDNA Haplotype Network")
+dev.off()
 
-# Method 3: Check if there are any variable sites
-variable_sites <- apply(as.character(sequences), 2, function(x) length(unique(x[x != "-" & x != "n"])) > 1)
-num_variable <- sum(variable_sites, na.rm = TRUE)
-
-cat("Number of variable sites:", num_variable, "\n")
-
-# Method 4: Look at the first few positions to see variation
-cat("\nFirst 20 positions of each sequence:\n")
-for(i in 1:min(5, nrow(sequences))) {
-  cat(rownames(sequences)[i], ":", paste(as.character(sequences)[i, 1:20], collapse = ""), "\n")
-}
-
+cat("\nNetwork saved: haplotype_network.pdf\n")

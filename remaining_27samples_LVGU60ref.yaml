@@ -1,0 +1,155 @@
+# Mapping remaining 27 modern samples to Lava Gull (LVGU_60) reference
+
+Options:
+  Platform: Illumina
+  QualityOffset: 33
+  AdapterRemoval:
+    --collapse: no
+    --trimns: no
+    --trimqualities: no
+  Aligners:
+    Program: BWA
+    BWA:
+      Algorithm: mem
+      MinQuality: 20
+      FilterUnmappedReads: yes
+      UseSeed: yes
+
+Prefixes:
+  LavaGull:
+    Path: /home/askehel/Sequencing_Mapping/LVGU_60_ref.fasta
+
+LVGU_1:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_1_R{Pair}_cleaned.fq.gz
+
+LVGU_2:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_2_R{Pair}_cleaned.fq.gz
+
+LVGU_3:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_3_R{Pair}_cleaned.fq.gz
+
+LVGU_4:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_4_R{Pair}_cleaned.fq.gz
+
+LVGU_6:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_6_R{Pair}_cleaned.fq.gz
+
+LVGU_9:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_9_R{Pair}_cleaned.fq.gz
+
+LVGU_10:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_10_R{Pair}_cleaned.fq.gz
+
+LVGU_11:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_11_R{Pair}_cleaned.fq.gz
+
+LVGU_12:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_12_R{Pair}_cleaned.fq.gz
+
+LVGU_14:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_14_R{Pair}_cleaned.fq.gz
+
+LVGU_15:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_15_R{Pair}_cleaned.fq.gz
+
+LVGU_18:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_18_R{Pair}_cleaned.fq.gz
+
+LVGU_19:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_19_R{Pair}_cleaned.fq.gz
+
+LVGU_20:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_20_R{Pair}_cleaned.fq.gz
+
+LVGU_23:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_23_R{Pair}_cleaned.fq.gz
+
+LVGU_24:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_24_R{Pair}_cleaned.fq.gz
+
+LVGU_25:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_25_R{Pair}_cleaned.fq.gz
+
+LVGU_30:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_30_R{Pair}_cleaned.fq.gz
+
+LVGU_34:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_34_R{Pair}_cleaned.fq.gz
+
+LVGU_39:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_39_R{Pair}_cleaned.fq.gz
+
+LVGU_40:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_40_R{Pair}_cleaned.fq.gz
+
+LVGU_46:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_46_R{Pair}_cleaned.fq.gz
+
+LVGU_47:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_47_R{Pair}_cleaned.fq.gz
+
+LVGU_48:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_48_R{Pair}_cleaned.fq.gz
+
+LVGU_52:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_52_R{Pair}_cleaned.fq.gz
+
+LVGU_54:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_54_R{Pair}_cleaned.fq.gz
+
+LVGU_56:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_56_R{Pair}_cleaned.fq.gz

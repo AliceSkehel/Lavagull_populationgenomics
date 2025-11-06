@@ -1,0 +1,45 @@
+# Test mapping 5 samples to Lava Gull (LVGU_60) reference
+
+Options:
+  Platform: Illumina
+  QualityOffset: 33
+  AdapterRemoval:
+    --collapse: no
+    --trimns: no
+    --trimqualities: no
+  Aligners:
+    Program: BWA
+    BWA:
+      Algorithm: mem
+      MinQuality: 20
+      FilterUnmappedReads: yes
+      UseSeed: yes
+
+Prefixes:
+  LavaGull:
+    Path: /home/askehel/Sequencing_Mapping/LVGU_60_ref.fasta
+
+LVGU_5:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_5_R{Pair}_cleaned.fq.gz
+
+LVGU_7:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_7_R{Pair}_cleaned.fq.gz
+
+LVGU_13:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_13_R{Pair}_cleaned.fq.gz
+
+LVGU_37:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_37_R{Pair}_cleaned.fq.gz
+
+LVGU_42:
+  LavaGull:
+    Lib1:
+      Lane_01: /home/askehel/Sequencing_Combined/cleaned_fastq/LVGU_42_R{Pair}_cleaned.fq.gz

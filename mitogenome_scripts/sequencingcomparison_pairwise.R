@@ -56,8 +56,7 @@ analyze_platforms <- function(illumina_file = "illumina_all_angsd.fasta",
     labs(title = "Platform Concordance", x = "Identity (%)", y = "Count") +
     theme_minimal()
   
-  ggsave("platform_concordance.png", p, width = 8, height = 5)
-  write.csv(results, "concordance_results.csv", row.names = FALSE)
+    write.csv(results, "concordance_results.csv", row.names = FALSE)
   
   # Cleanup
   system("rm temp_illumina.fasta temp_ont.fasta combined.fasta")

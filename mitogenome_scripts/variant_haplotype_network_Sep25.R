@@ -151,9 +151,7 @@ for(min_overlap in c(25, 50, 100, 200)) {
   cat("Min overlap", min_overlap, "bp: ", n_groups, "haplotype groups\n")
 }
 
-# Save results
-write.csv(variant_results, "analysis_outputs/variant_temporal_haplotypes.csv", row.names = FALSE)
-
 cat("\nVariant-based temporal analysis complete!\n")
 cat("Files saved:\n")
 cat("- variant_temporal_haplotypes.csv\n")
+
